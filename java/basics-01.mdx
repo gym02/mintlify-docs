@@ -1,0 +1,266 @@
+---
+title: Java 基础（上）
+sidebarTitle: Java 基础（上）
+description: 方法重载与重写、装箱拆箱、HashMap、ArrayList/Vector、synchronized与ReentrantLock、CAS、锁类型、集合、Java8、==/equals/hashCode、final/finally/finalize、static
+---
+
+## 一、Java 基础
+
+### 1、方法重载（Overload）和方法重写（Override）的区别
+
+- 重载：同一个类中，方法名相同，但“参数列表”不同（参数个数/类型/顺序不同）。返回值不同不构成重载。
+- 重写：发生在继承体系中，子类对父类的实例方法提供新的实现。方法名和参数列表必须一致；返回值可协变；访问权限不能更严格；抛出异常范围不能更大。
+
+### 2、自动装箱/拆箱原理与常见问题
+
+- 装箱：基本类型 -> 包装类型，例如 Integer i = 1，本质是 Integer.valueOf(1)（可能走缓存）。
+- 拆箱：包装类型 -> 基本类型，例如 int x = i，本质是 i.intValue()。
+
+常见问题：  
+1）NPE：包装类型为 null 时拆箱会触发空指针。  
+2）性能：频繁装箱/拆箱会带来额外对象创建与 GC 压力，尤其在循环中。  
+3）比较陷阱：包装类型用 equals 比值；用 == 比的是引用。Integer 在 [-128, 127] 有缓存，可能导致 == 表现“看起来相等”。  
+（JDK 会把一小段范围内的 Integer 对象提前创建好并复用，避免频繁 new 对象。可以通过 JVM 参数 `-XX:AutoBoxCacheMax=&lt;size&gt;` 来调整缓存的上限，下限固定为 -128。）
+
+### 3、JDK 1.7 vs 1.8 HashMap 区别
+
+**1）数据结构：**  
+- 1.7：数组 + 链表。  
+- 1.8：数组 + 链表/红黑树。树化条件：当链表长度 &gt;= 8 且数组 table 自动扩充到容量 &gt;= 64 才会树化；当树节点数 &lt;= 6 会退化回链表。
+
+**2）插入方式：**  
+- 1.7：头插法（扩容迁移时，在多线程情况下可能形成环）。  
+多线程下还是使用 ConcurrentHashMap，它用 synchronized 结合 CAS（比较并交换）更细粒度的锁。具体来说就是只对正在操作的链表头节点，或者红黑树的根节点加锁，其他线程可以同时操作其他的节点。同时，它还通过 volatile 关键字保证了节点的可见性。即避免线程缓存问题，保证一个线程改了 value 时，其他线程也能看到这个修改。  
+- 1.8：尾插法（降低上述风险）。
+
+**3）扩容迁移：**  
+- 1.7：都通过 rehash 后重新计算索引。  
+- 1.8：通过位运算判断是否重新计算哈希和索引，减少计算。
+
+补充：hashmap 自动扩充过程：hashmap 默认容量是 16，负载因子是 0.75，所以当元素超过 12 时，就会触发扩容，扩容的时候，新容量是旧容量的两倍。16 变成 32。然后会创建一个新的数组，把旧数组里的元素放到新数组里，用新数组替换旧数组，完成扩容。
+
+### 4、ArrayList 和 Vector 的区别
+
+- 线程安全：ArrayList 非线程安全；Vector 方法大多是 synchronized，线程安全但性能更差。
+- 扩容策略：ArrayList 默认长度是 10，通常按 1.5 倍扩容；Vector 默认长度是 10，默认 2 倍（或按 capacityIncrement）。
+- 实际开发中：需要线程安全更常用 Collections.synchronizedList 或 CopyOnWriteArrayList（读多写少）。
+
+补充：ArrayList 的扩容机制（以 JDK 1.8 为例）  
+- 初始容量：无参构造第一次 add 时扩成 10，有参构造则用你指定的容量。  
+- 触发时机：每次 add 之前会检查容量，若当前 size + 1 &gt; 数组长度，就触发扩容。
+- 新容量计算：newCapacity = oldCapacity + (oldCapacity &gt;&gt; 1)，也就是 1.5 倍扩容；如果还不够容纳最小需要容量，会取“需要容量”和 1.5 倍中的更大者。
+- 扩容过程：新建一个更大的数组，把旧数组里的元素用 System.arraycopy 复制过去，再用新数组替换旧数组。
+
+### 5、synchronized 和 ReentrantLock 的区别
+
+用法上：  
+- synchronized：写在方法/代码块上，出了作用域自动释放锁  
+- ReentrantLock：需要 lock() / unlock()，一般必须写在 finally 里  
+
+功能上 ReentrantLock 比 synchronized 多这些能力：  
+1）可中断，线程在等锁时可以被 interrupt() 打断（避免一直死等）。  
+2）tryLock，定时获取锁。可以“拿不到就算了”或“等一会儿拿不到就放弃”，更适合做降级/避免死锁。  
+3）公平锁，可以选择公平（先来先得）或非公平（默认，吞吐更高）。synchronized 只有非公平的感觉。  
+4）多个条件队列 Condition。一个锁可以配多个 Condition（比如“队列不空”“队列不满”分开等）。synchronized 只有一个隐式条件队列（配合 wait/notify，粒度更粗）。
+
+底层实现上：  
+- synchronized：JVM 帮你管理锁（monitor），你只管写关键字  
+- ReentrantLock：Java 层自己实现了一套锁机制（AQS），用一个状态值 + 队列来管理“谁拿到锁、谁在排队”，并用 CAS 做原子更新  
+
+- 只要互斥、代码简单：优先 synchronized  
+- 需要 tryLock/超时/可中断/公平/多个条件队列：用 ReentrantLock  
+
+### 6、什么是 CAS
+
+CAS（Compare And Swap）是一种无锁原子操作。它比较内存里的值，是否和上次看到的值是一样的，若相等则更新为新值，否则，说明被别人改过了，我这次更新失败，通常会重试（自旋）。  
+作用：主要用来做无锁并发，减少 synchronized 那种阻塞、唤醒带来的开销。  
+问题：CAS 的问题主要是 ABA、竞争激烈时自旋耗 CPU、以及只能保证单变量原子更新。
+
+### 7、锁的类型有哪些（面试口述版）
+
+按 Java 并发里常见的分类，你可以从 4 个维度讲：
+
+**1）按是否阻塞：**  
+- 悲观锁：假设“肯定会冲突”，所以先把资源锁住再操作，别的线程只能阻塞等待（典型如 synchronized、ReentrantLock）。  
+- 乐观锁：假设“多数时候不会冲突”，不一开始就加锁，只是在更新时用版本号/CAS 检查是否被人改过，若失败就重试（典型如 Atomic 类、基于版本号的乐观锁字段）。
+
+**2）按是否可重入：**  
+- 可重入锁：同一线程拿到锁后可以再次进入（synchronized、ReentrantLock）。  
+- 不可重入锁：拿到锁后再次进入会锁死（了解即可）。
+
+**3）按是否公平：**  
+- 公平锁：先来先得（ReentrantLock 可配置）。  
+- 非公平锁：允许插队，吞吐更高（synchronized 更偏非公平）。
+
+**4）按读写场景：**  
+- 互斥锁：读写都互斥（synchronized、ReentrantLock）。  
+- 读写锁：读共享、写互斥（ReentrantReadWriteLock），适合读多写少。
+
+一句话总结：悲观/乐观、可重入/不可重入、公平/非公平、互斥锁/读写锁。
+
+**5）按 JVM 对 synchronized 的优化（了解即可）：**  
+- 偏向锁：基本只有一个线程用锁时，几乎不做竞争开销。  
+- 轻量级锁：有少量竞争时，先用 CAS + 自旋尝试拿锁。  
+- 重量级锁：竞争激烈时，线程会阻塞/唤醒，开销最大。  
+- 自旋锁：不立刻阻塞，先在 CPU 上循环等一会儿（适合持锁时间很短）。
+
+**6）并发库里常见的“锁/同步工具”（扩展）：**  
+- StampedLock：读写的增强版锁，支持乐观读。  
+- Semaphore / CountDownLatch / CyclicBarrier：严格说不是锁，但也是并发控制常用工具。
+
+### 8、Java 常见集合（面试口述版：讲得懂）
+
+先把“场景”记住：  
+- List：要顺序、允许重复  
+- Set：要去重  
+- Map：要 key-value，通过 key 找 value  
+
+**1）List（有序、可重复）**  
+- ArrayList：底层数组。你可以这样理解：数组下标定位，所以“查快”；但中间插入/删除要搬移，所以“改慢”。  
+- LinkedList：底层双向链表。你可以这样理解：改指针所以“改快”；但要从头/尾一路找，所以“查慢”。  
+- Vector：线程安全版 ArrayList（方法加 synchronized），但性能一般，现在更多用并发容器替代。
+
+**2）Set（不可重复）**  
+- HashSet：底层就是 HashMap。你可以这样理解：把元素当成 HashMap 的 key，所以天然去重；无序；查找快。  
+- LinkedHashSet：在 HashSet 基础上多维护一条链表，所以“按插入顺序有序”。  
+- TreeSet：底层红黑树，所以“按排序有序”，适合范围查询，但比 HashSet 慢一些。
+
+**3）Map（key 不重复）**  
+- HashMap：最常用；无序；查找快；线程不安全；允许 key 为 null。  
+- LinkedHashMap：在 HashMap 基础上维护顺序（插入顺序/访问顺序），常用来做 LRU。LRU（Least Recently Used）：最近最少使用淘汰策略。你可以这样理解：缓存满了就把“最久没被访问”的那条数据删掉，保留最近常用的。LinkedHashMap 可以用 accessOrder=true 维护访问顺序，再配合 removeEldestEntry 实现 LRU。  
+- TreeMap：红黑树；key 排序有序；适合范围查询。  
+- Hashtable：线程安全（synchronized），老旧；现在更多用 ConcurrentHashMap。  
+- ConcurrentHashMap：并发场景首选（更细粒度的并发控制）。
+
+**4）遍历集合的常见方式**  
+- 传统 for 下标遍历：适合 List，按索引随机访问；不适合 Set/Map。
+
+```java
+for (int i = 0; i < list.size(); i++) {
+    String s = list.get(i);
+    System.out.println(s);
+}
+```
+
+- 增强 for-each：语法最简单，适合大多数“只读遍历”场景。
+
+```java
+for (String s : list) {
+    System.out.println(s);
+}
+```
+
+- Iterator：显式拿迭代器，边遍历边删除元素时用它的 remove，避免 ConcurrentModificationException。
+
+```java
+Iterator<String> it = list.iterator();
+while (it.hasNext()) {
+    String s = it.next();
+    if (s.isEmpty()) {
+        it.remove(); // 遍历时安全删除
+    }
+}
+```
+
+- forEach / Stream：Java 8 之后更常见，配合 Lambda 做过滤、映射、聚合，更适合集合的“处理流水线”式写法。
+
+```java
+list.stream()
+    .filter(s -> s.length() > 3)
+    .forEach(System.out::println);
+```
+
+一句话口诀：数组查快；链表改快；要有序用 Linked；要排序用 Tree；要并发用 Concurrent。
+
+### 9、Java 8 新特性（面试口述版：从 0 讲清楚）
+
+Java 8 最核心的变化是引入了函数式编程的思想，整体目标是让代码更简洁、可读性更好，同时提升对并行处理的支持。在实际使用中，感受最明显的主要有几个方面。
+
+**1）Lambda 表达式**  
+它本质上是对函数式接口的简化写法。经常配合集合操作或线程使用，提高可读性。
+
+**2）函数式接口与 @FunctionalInterface**  
+Java 8 明确提出了“函数式接口”的概念：即只包含一个抽象方法的接口，来配合 Lambda 的使用。比如 Runnable、Callable、Comparator 都是典型的函数式接口。
+
+```java
+new Thread(() -> System.out.println("run")).start();
+```
+
+**3）方法引用（Lambda 的进一步简化）**  
+它其实是对 Lambda 的进一步简化，当我们去“调用一个已有方法”时，可以用 ::。比如 类名::静态方法、对象::实例方法、类名::实例方法、类名::new。
+
+**4）Stream API**  
+让我们可以通过链式调用来完成过滤、聚合等操作，而不需要手动控制循环过程。Stream 的操作分为中间操作和终止操作，只有在执行终止操作时才会真正计算，这种惰性执行的机制提供了良好的性能。另外，Stream 还天然支持并行流，在合适的场景下可以比较方便地利用多核 CPU。
+
+```java
+List<String> names = users.stream()
+    .filter(u -> u.getAge() > 18)   // 这里的 u -> ... 是 Lambda
+    .map(User::getName)             // 这里的 User::getName 是方法引用（也是 Lambda 的一种写法）
+    .collect(Collectors.toList());
+```
+
+**5）Optional 类**  
+Optional 主要是为了解决空指针异常的问题，它通过显式地表达“值可能不存在”这一语义，迫使开发者在使用之前进行处理。在项目中，Optional 通常用于方法的返回值，可以减少大量的 null 判断，让代码意图更加清晰，不过一般不太建议作为成员变量或方法参数来使用。
+
+**6）新的日期时间 API（java.time 包）**  
+相比之前的 Date 和 Calendar，java.time 包是线程安全的，而且在语义上更加清晰。
+
+**7）接口默认方法（default method）**  
+Java 8 允许接口写 default 方法（带实现）。意义：接口升级加新方法时，不想让所有实现类都改。标准库里 Collection 新增的 forEach、stream 等就是典型例子。
+
+**8）CompletableFuture（并发能力增强）**  
+相比传统 Future，你提交任务后，只能“等/轮询”拿结果，编排能力弱。CompletableFuture 提供了更好用的异步编排能力，它可以把“完成后做什么、异常怎么处理、多个任务怎么组合”都写成一条链。
+
+### 10、== 和 equals 区别？hashCode 必须满足什么约定？（面试口述版）
+
+**1）== 和 equals 区别**  
+- ==：  
+  - 基本类型：比“值”。  
+  - 引用类型：比“引用地址”（是不是同一个对象）。  
+- equals：默认（Object.equals）也是比地址；但很多类（String、Integer、BigDecimal 等）重写了 equals，用来比“内容”。
+
+**2）hashCode 的约定（必须背这 3 条）**  
+- 如果 a.equals(b) 为 true，那么 a.hashCode() 必须等于 b.hashCode()。  
+- 如果 a.hashCode() 不等于 b.hashCode()，那么 a.equals(b) 一定为 false。  
+- 如果 a.equals(b) 为 false，hashCode 可以相等（哈希冲突），但会影响性能。
+
+**3）面试常追问：重写 equals 为啥必须重写 hashCode**  
+- 如果不重写 hashCode，会用 Object.hashCode()，它通常跟“对象标识/内存地址”相关。new User(1) 和 new User(1) 即使内容一样，默认 hashCode 也大概率不同。哈希容器先用 hashCode 定位桶，再用 equals 判断相等；equals 相等但 hashCode 不等，会进不同桶，导致去重失败/查不到。
+
+### 11、final / finally / finalize 区别？（面试口述版）
+
+- **final**：关键字。  
+  - 修饰类：类不能被继承。  
+  - 修饰方法：方法不能被重写。  
+  - 修饰变量：变量只能赋值一次（引用不可变，但对象内容可能可变）。
+
+- **finally**：异常处理里的代码块。  
+  - 不管是否抛异常，通常都会执行（常用来释放资源：close/unlock）。  
+  - 例外：JVM 直接退出（System.exit）、进程崩溃等情况可能不执行。
+
+- **finalize**：Object 的方法（已不推荐/逐步废弃）。  
+  - GC 之前可能会调用，用来做“最后清理”，但不保证及时执行，也不保证一定执行。  
+  - 现在更推荐 try-with-resources / Cleaner / 显式 close。
+
+### 12、static 关键字：静态变量/静态方法/静态代码块加载时机？（面试口述版）
+
+static 是类级别的，全类共享一份。第一次用到类时会触发类初始化，static 变量和 static 代码块只执行一次。
+
+什么时候会触发类初始化（常见场景，背这几个就够）：  
+- new 这个类的对象  
+- 访问/修改这个类的静态变量（final 常量除外）  
+- 调用这个类的静态方法  
+- 反射使用这个类（Class.forName / 反射创建对象等）  
+- 初始化子类时，会先初始化父类  
+
+子类初始化/实例化的完整顺序（面试常问，背这个）：  
+1）父类：静态变量/静态代码块（只执行一次）  
+2）子类：静态变量/静态代码块（只执行一次）  
+3）父类：实例变量/实例代码块（每 new 一次执行一次）  
+4）父类：构造方法  
+5）子类：实例变量/实例代码块  
+6）子类：构造方法  
+
+一句话口诀：父静态 → 子静态 → 父实例 → 父构造 → 子实例 → 子构造。
+
+static 方法属于类，不走对象多态，所以不能 override。

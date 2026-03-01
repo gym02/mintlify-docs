@@ -1,97 +1,47 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: 面试八股文
+description: 个人面试背诵与复习用，按分类整理的八股文笔记
 ---
 
-## Setting up
+## 简介
 
-Get your documentation site up and running in minutes.
+本站为个人整理的**技术面试八股文**，便于阅读和背诵。结构参考 [JavaGuide](https://javaguide.cn)，按技术栈分类，每类下为常见面试题与口述版答案。
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
+## 分类导航
 
 <Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+  <Card title="Java 基础" icon="java" href="/java/basics-01">
+    方法重载与重写、装箱拆箱、HashMap、集合、锁、多线程等
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="JVM" icon="server" href="/jvm/questions">
+    OOM 排查、运行时内存区、方法区与元空间
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Spring" icon="leaf" href="/spring/questions">
+    IOC、MVC、AOP、事务、循环依赖、MyBatis
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="数据库" icon="database" href="/database/mysql-01">
+    ACID、隔离级别、索引、慢 SQL、锁、主从、ES 倒排索引
+  </Card>
+  <Card title="Redis" icon="bolt" href="/redis/questions">
+    缓存穿透/击穿/雪崩、持久化、主从哨兵集群、分布式锁
+  </Card>
+  <Card title="前端" icon="browser" href="/frontend/questions">
+    React 生命周期、虚拟 DOM、Vue3 生命周期
+  </Card>
+  <Card title="DevOps" icon="terminal" href="/devops/questions">
+    Linux、Docker、Git 常用命令
+  </Card>
+  <Card title="面试项目" icon="folder" href="/project/questions">
+    LangGraph Multi-Agent、VAE/编码链路优化
+  </Card>
+  <Card title="场景题" icon="lightbulb" href="/scenario/questions">
+    登录系统设计、RabbitMQ 消息积压
   </Card>
 </Columns>
 
-## Create beautiful pages
+## 使用方式
 
-Everything you need to create world-class documentation.
+- **本地预览**：在项目根目录执行 `mint dev`，浏览器打开 `http://localhost:3000`。
+- **背诵建议**：先看标题自测，再展开看要点；口述版可直接按条目复述。
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
-
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+源内容来自 **offer.txt**，已按分类整理并补充为可读 MDX 文档。

@@ -1,0 +1,91 @@
+---
+title: Spring 常见面试题
+sidebarTitle: Spring 常见面试题
+description: IOC、MVC、AOP、事务、Spring Cloud Alibaba、循环依赖、MyBatis
+---
+
+## 三、Spring
+
+### 1、Spring IOC 底层原理（简述）
+
+Spring IOC 对象不再由你 new，而是 Spring 负责创建、组装（注入依赖）、并保存起来，你需要时直接从容器拿。  
+大概流程是：扫描 -> 创建 -> 注入 -> 放进容器。  
+展开成 4 步：  
+1）扫描：启动时扫描 @Component/@Service/@Controller/@Configuration 等注解，把每个 Bean 解析成定义信息（BeanDefinition）。  
+2）创建：需要用到时（或启动时）根据定义去 new 对象（反射/构造器）。  
+3）注入：创建完对象后，Spring 会把它依赖的其他 Bean 填进去。  
+4）缓存：如果是单例 Bean，Spring 会把它放进容器的缓存里，后面直接取用。
+
+Spring 启动时会扫描配置/注解，解析成 BeanDefinition；然后通过 BeanFactory 创建 Bean：实例化（反射/构造器）-> 属性填充（依赖注入）-> Aware 回调 -> BeanPostProcessor 前后置处理（AOP 代理常在这里生成）-> 初始化（@PostConstruct/InitializingBean）-> 放入单例池（singletonObjects 等缓存）供后续获取。
+
+**补充：@Autowired 和 @Resource 的区别（面试口述版）**  
+- @Autowired（Spring 提供）：默认按类型装配（byType），如果有多个同类型 Bean，再结合 @Qualifier 或参数名按名称细化；支持构造器注入、字段注入、setter 注入，required=false 时找不到 Bean 也不会报错。  
+- @Resource（JSR-250 标准）：默认按名称装配（byName，先看 name，再看字段名），找不到再按类型；更偏向规范注解，在多框架环境下可移植性更好。  
+- 简单记：**优先 @Autowired（配合 @Qualifier），需要按名称精确指定或做更通用写法时用 @Resource。**
+
+### 2、Spring MVC 执行流程
+
+第一步，找入口：请求先到 DispatcherServlet，它是整个流程的核心，负责调度。  
+第二步，找方法：HandlerMapping 根据 URL 找到对应的 Controller 方法，HandlerAdapter 再去执行这个方法，得到 ModelAndView 或返回值。  
+第三步，做收尾：拦截器的 afterCompletion 方法做最后执行，将响应返回。
+
+请求进入 DispatcherServlet：  
+1）HandlerMapping 根据 URL 找到 Controller 方法及拦截器链。  
+2）HandlerAdapter 调用目标方法。  
+3）返回 ModelAndView 或返回值：
+
+- 视图：ViewResolver 解析视图并渲染。
+- JSON：@ResponseBody / @RestController 走 HttpMessageConverter 序列化。
+
+4）拦截器 afterCompletion，最终响应返回。
+
+### 3、Spring AOP 是什么？底层原理是什么？（更好背版）
+
+- 什么是 AOP：可以简单理解为“面向切面编程”，就是**给方法套一层外壳**，在不改原方法代码的前提下，把日志、事务、权限这些“横切关注点”统一抽出来，在方法执行的前后/异常时统一处理。  
+- 在 Spring 里，AOP 的本质是：Spring 不直接把原始 Bean 给你，而是给你一个“代理对象”，你调的其实是代理；代理在合适的时机再去调用目标方法，中间把各种增强逻辑织进去。
+
+- 底层原理：主要是“动态代理 + 方法拦截”  
+  - JDK 动态代理：基于接口，只能代理实现了接口的类；Spring 默认优先用这个（代理的是接口）。  
+  - CGLIB 代理：通过生成子类、重写方法来实现代理；适合没有接口的普通类（代理的是类本身）。  
+  - 方法调用链：调用代理方法 -> 进入一堆切面（前置/后置/环绕等）-> 最后再执行目标方法 -> 再执行收尾逻辑。
+
+### 4、事务是什么？传播行为和隔离级别（面试口语版）
+
+事务就是把一组操作当成一个整体：要么都成功提交，要么出错就一起回滚，保证数据一致性（ACID）。
+
+Spring 事务传播行为（常问 3 个就够用）：  
+- REQUIRED（默认）：外面有事务就加入；外面没有就新开一个。  
+- REQUIRES_NEW：不管外面有没有，都新开一个事务；外层事务先挂起。  
+- SUPPORTS：外面有事务就加入；外面没有事务就“以非事务方式”执行。
+
+隔离级别（解决并发读写问题）：  
+- 读未提交  
+- 读已提交  
+- 可重复读  
+- 串行化  
+
+一句话总结：传播行为决定“多个方法事务怎么嵌套/怎么开”；隔离级别决定“并发下能看到什么数据”。
+
+### 5、Spring Cloud Alibaba 常用组件和功能（面试口语版）
+
+- Nacos：注册中心 + 配置中心（服务注册发现、动态配置、灰度/多环境配置）。  
+- Gateway：API 网关（统一路由、鉴权、限流、日志、跨域等）。  
+- Seata：分布式事务（AT/TCC 等模式，解决跨服务一致性问题）。  
+- OpenFeign：声明式 HTTP 调用（像调本地方法一样调远程服务）。  
+- Sentinel：限流/熔断/降级（保护服务不被突发流量打挂）。  
+- RocketMQ：消息队列（异步解耦、削峰填谷、最终一致性）。
+
+一句话总结：Nacos 管注册和配置，Sentinel 管保护，Feign 管调用，Gateway 管入口，Seata 管分布式事务，MQ 管异步。
+
+### 6、Spring 循环依赖如何解决？（面试口述版）
+
+循环依赖是在 Spring 容器中，两个或多个 Bean 互相依赖对方，导致无法完成实例化。Spring 通过三级缓存机制来解决循环依赖。  
+一级缓存：用于存放已经完全初始化的 Bean。  
+二级缓存：用于存放部分初始化的 Bean（也叫早期对象）。当 A 依赖 B，B 还没有完全初始化时，Spring 会先将 B 放入二级缓存，允许 A 从二级缓存中获取到部分初始化的 B。  
+三级缓存：保存的是 beanDefinition，这是 Spring 用来描述 Bean 定义的元数据，帮助 Spring 完成 Bean 的创建过程。
+
+### 7、MyBatis 和 MyBatis-Plus 的区别？（面试口述版）
+
+- MyBatis：自己写 SQL，灵活但 CRUD 要多写代码。  
+- MyBatis-Plus：帮你生成/封装常见 CRUD，少写 SQL，开发更快。  
+- 口诀：**MyBatis 写得多更灵活，MyBatis-Plus 写得少更高效，底层都是 MyBatis。**

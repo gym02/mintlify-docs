@@ -1,0 +1,233 @@
+---
+title: Java 基础（下）
+sidebarTitle: Java 基础（下）
+description: 接口与抽象类、深浅拷贝、反射、异常、volatile、ThreadLocal、synchronized原理、多线程、线程池、Object、ArrayList与LinkedList
+---
+
+### 13、接口 vs 抽象类区别？什么时候用接口，什么时候用抽象类？（面试口述版）
+
+**1）接口（interface）**  
+- 更像“能力/规范”：强调你能做什么。  
+- 支持多实现（一个类可以实现多个接口）。  
+- Java 8 以后接口可以有 default 方法，但核心还是“规范”。
+
+**2）抽象类（abstract class）**  
+- 更像“模板/父类”：强调你是什么。  
+- 只能单继承（extends 一个抽象类）。  
+- 可以有成员变量、构造方法、抽象方法 + 已实现方法，适合复用公共代码。
+
+**3）怎么选（面试一句话）**  
+- 需要“多继承能力/解耦/定义规范” → 用接口。  
+- 需要“复用公共代码/统一模板/有状态字段” → 用抽象类。
+
+### 14、深拷贝 vs 浅拷贝？Cloneable 怎么用？为什么不推荐？（面试口述版）
+
+**1）浅拷贝（Shallow Copy）**  
+- 只复制对象本身；对象里的引用字段仍指向同一份子对象。
+
+**2）深拷贝（Deep Copy）**  
+- 不仅复制对象本身，还会把引用的子对象也复制一份，互不影响。
+
+**3）Cloneable 怎么用（了解即可）**  
+- 实现 Cloneable 接口，并重写 clone()（通常调用 super.clone()）。  
+- 注意：super.clone() 默认是浅拷贝；要深拷贝需要手动 clone 子对象。
+
+**4）为什么不推荐 clone**  
+- 语义不清晰（浅拷贝/深拷贝容易踩坑）。  
+- 需要处理 CloneNotSupportedException。  
+- 容易破坏封装（直接绕过构造方法）。  
+- 实际更常用：拷贝构造器、静态工厂、序列化/JSON（看场景）。
+
+### 15、反射是什么？优缺点？常见使用场景（面试口述版）
+
+**1）反射是什么**  
+- 程序在运行时，可以获取类的结构信息，并动态地创建对象、调用方法、访问属性的一种机制。比如通过 Class.forName() 拿到类的元数据。
+
+**2）优点**  
+- 灵活：灵活性强，可以做通用框架、解耦（不依赖具体类）。
+
+**3）缺点**  
+- 性能开销较大：反射调用比直接调用慢、高频场景不适合大量使用  
+- 破坏封装性：可以访问 private 成员  
+
+**4）常见场景**  
+- Spring：IOC、依赖注入、AOP  
+- 注解：运行时读取注解做路由/校验/映射。  
+- 动态代理：JDK Proxy 基于反射调用 InvocationHandler。
+
+一句话总结：反射=运行时操作类结构；优点是灵活解耦；缺点是慢且不安全；框架用它做 IOC/注解/代理。
+
+### 16、异常体系（面试口述版）
+
+**1）Error vs Exception**  
+- Error：JVM 层面的严重问题，通常程序无法/不应该处理（如 OOM、StackOverflowError）。  
+- Exception：程序运行中可预期的异常情况，通常需要处理或抛出。
+
+**2）RuntimeException vs Checked Exception**  
+- RuntimeException（运行时异常）：不强制 try-catch/throws，通常是“代码问题/参数问题”（NPE、IndexOutOfBounds、IllegalArgument）。  
+- Checked Exception（受检异常）：编译器强制处理（try-catch 或 throws），通常是“外部环境问题”（IO、网络、数据库等）。
+
+**3）try-catch-finally 执行顺序？finally 一定会执行吗？**  
+- 正常流程：try →（有异常走 catch）→ finally。  
+- finally 通常都会执行，用来释放资源（close/unlock）。  
+- 例外情况（面试要说）：  
+  - JVM 直接退出：System.exit()  
+  - 进程崩溃/被 kill  
+  - 极端情况：finally 里死循环/阻塞导致看起来“没执行完”  
+
+**4）自定义异常怎么设计？什么时候抛业务异常？**  
+- 设计建议：  
+  - 业务异常一般继承 RuntimeException（不强制层层 throws）。  
+  - 带上错误码/错误信息/上下文（比如订单号、用户 id），便于定位。  
+  - 区分“业务可预期异常”（如库存不足）和“系统异常”（如 DB 挂了）。  
+- 什么时候抛：  
+  - 业务校验不通过：参数非法、权限不足、状态不允许、库存不足等。  
+  - 需要让上层统一捕获并返回明确错误码/提示时。
+
+一句话总结：Error 别硬扛；Exception 要处理；运行时异常多是代码问题；受检异常多是外部问题；finally 负责收尾；业务异常用 RuntimeException + 错误码。
+
+### 17、volatile 作用？（面试口述版）
+
+volatile 是一个轻量级并发关键字，用来保证“可见性”和“有序性”。  
+- 保证可见性：保证一个线程的修改，会立即刷新到主内存中，对其他线程立即可见。  
+- 保证有序性（禁止指令重排序）：JVM 和 CPU 可能会对指令进行重排序，比如 `a = new Object();` 理想顺序下，其实至少三步：分配内存、初始化对象、把对象引用赋值给 a。但在多线程下可能导致逻辑错误，比如第二步和第三步的顺序对调了。
+
+**3）volatile 不能保证什么**  
+- 不保证原子性：i++ 这种复合操作仍然不是原子操作。
+
+**4）常见使用场景**  
+- 状态标记/开关：比如 stop 标志位。  
+- DCL 单例里的 volatile（防止 new 对象时指令重排导致拿到半初始化对象）。
+
+### 18、ThreadLocal 原理？为什么会内存泄漏？怎么避免？（面试口述版）
+
+**1）ThreadLocal 是什么**  
+- ThreadLocal 是“线程本地变量”：同一个 ThreadLocal，在不同线程里各有一份值，互不影响。
+
+**2）底层原理**  
+- 每个线程 Thread 内部都有一个 ThreadLocalMap。  
+- ThreadLocalMap 的 key 是 ThreadLocal（弱引用），value 是你存的对象。
+
+**3）为什么会内存泄漏**  
+- key 是弱引用：ThreadLocal 没有强引用时，key 可能被 GC 掉，变成 null。  
+- 但 value 是强引用：如果线程一直不结束（线程池线程），value 可能一直挂在 ThreadLocalMap 里，导致内存泄漏。
+
+**4）怎么避免**  
+- 用完一定 remove：try/finally 里 ThreadLocal.remove()。  
+- 线程池场景尤其要 remove（线程复用，最容易泄漏/串数据）。
+
+### 19、线程池和 ThreadLocal 搭配一起用会有什么问题？（面试口述版）
+
+- 核心原因：线程池会复用线程，但 ThreadLocal 的值是“挂在线程上的”，不会自动清理。  
+- 常见问题：  
+  - 串数据：上一个任务没清理，下一个任务可能读到上一个请求的用户信息/租户 ID/traceId。  
+  - 内存泄漏：线程长期不结束，ThreadLocalMap 里的 value 可能长期占用内存（尤其是大对象）。  
+  - 上下文传递坑：InheritableThreadLocal 只对“新建线程”生效，在线程池里常常不生效或拿到旧值。  
+- 解决方案（背这句）：**用完必清理（try/finally remove），别放大对象；需要跨线程传递就用任务包装/TTL 统一传递与清理。**
+
+### 20、synchronized 底层原理（面试口述版）
+
+**1）synchronized 锁的是什么**  
+- synchronized 锁的是“对象监视器 monitor”。  
+- 对象头（Mark Word）里会记录锁状态，必要时指向 Monitor。
+
+**2）怎么实现互斥**  
+- 进入 synchronized：尝试获取 monitor。  
+- 获取不到：在重量级锁下会阻塞挂起，等持锁线程释放后再唤醒。
+
+**3）锁升级（JDK 对 synchronized 的优化）**  
+- 无锁 → 偏向锁 → 轻量级锁（CAS + 自旋）→ 重量级锁（阻塞/唤醒）。  
+- 目的：在“无竞争/少竞争”时尽量不阻塞，提高性能。
+
+**4）常见追问**  
+- synchronized 是可重入锁。  
+- synchronized 释放锁：退出同步代码块/方法时自动释放。
+
+一句话总结：volatile 管可见性/有序性；ThreadLocal 管线程隔离但要 remove；synchronized 通过 monitor 实现互斥并有锁升级优化。
+
+### 21、多线程基础（面试口述版）
+
+**1）线程和进程的区别**  
+- 可以这样回答（口述版）：  
+  进程就是程序的一次运行实例，有自己独立的内存空间和资源，不同进程之间默认不共享内存，是资源分配单位。  
+  线程是进程里的执行单元，一个进程可以有多个线程，它们共享同一块内存，是 CPU 调度单位。
+
+**2）线程怎么创建（常见 3 种）**  
+- 继承 Thread：new MyThread().start()。  
+- 实现 Runnable：new Thread(runnable).start()。  
+- 线程池 + Callable/Future：提交任务拿 Future（生产更常用）。
+
+**3）线程状态（6 个）**  
+- NEW / RUNNABLE / BLOCKED / WAITING / TIMED_WAITING / TERMINATED。
+
+**4）常见方法（面试常问）**  
+- start vs run：start 才会真正启动新线程；run 只是普通方法调用。  
+- sleep：让当前线程睡一会儿，不释放锁。  
+- wait/notify：必须在 synchronized 内使用；wait 会释放锁；notify/notifyAll 唤醒等待线程。  
+- join：等待另一个线程执行完。
+
+### 22、线程池核心参数（ThreadPoolExecutor 7 参数，面试口述版）
+
+线程池的核心是 ThreadPoolExecutor：
+
+**ThreadPoolExecutor 3 个最重要的参数（面试可以这样说）：**  
+- **corePoolSize（核心线程数）**  
+  线程池里常驻的线程数量，上线后基本会一直存在。  
+  当运行的线程 < corePoolSize 时：有新任务来，就直接新建线程执行，不进队列。  
+  可以理解为：“平时保持这么多工人常驻干活”。
+
+- **maximumPoolSize（最大线程数）**  
+  线程池里能开的最大线程总数（核心 + 非核心）。  
+  当队列满了，还来任务时，如果当前线程数 < maximumPoolSize，就会再开新线程（非核心线程）处理。  
+  可以理解为：“最多能临时拉这么多工人一起上”。
+
+- **workQueue（任务队列）**  
+  放“等待执行任务”的队列。  
+  流程是：  
+  - 先看当前运行线程数是否 < corePoolSize，是就新建核心线程执行；  
+  - 否则，任务进队列等着；  
+  - 队列也满了，再尝试开非核心线程（直到 maximumPoolSize）；  
+  - 实在放不下，就走拒绝策略。  
+  常见实现：ArrayBlockingQueue（有界数组）、LinkedBlockingQueue（链表，有界/无界）、SynchronousQueue（不存任务，直接交给线程）。
+
+**ThreadPoolExecutor 其他常见参数：**  
+- **keepAliveTime（非核心线程存活时间）**  
+  当线程池里线程数大于 corePoolSize（也就是有非核心线程）时，这些非核心线程如果空闲了，不会立刻销毁，而是会“等一会儿”。等的这段时间就是 keepAliveTime；超过这个时间还没任务，就把这些非核心线程回收掉。所以它影响的是：高峰期结束后，临时加的线程多久收回。
+
+- **unit（时间单位）**  
+  就是 keepAliveTime 的时间单位，比如 TimeUnit.SECONDS、MILLISECONDS 等。
+
+- **threadFactory（线程工厂）**  
+  负责创建新线程的策略。可以用它来：给线程起统一、有含义的名字（方便排查问题）；设置是否是守护线程、优先级等。
+
+- **handler（拒绝策略）**  
+  当前线程数已经到 maximumPoolSize，队列也满了，新任务没地方放时，就会触发这个策略。  
+  常见几种：  
+  - AbortPolicy：直接抛异常（默认）。  
+  - CallerRunsPolicy：由提交任务的线程自己执行（起到削峰作用）。  
+  - DiscardPolicy：悄悄丢掉新任务。  
+  - DiscardOldestPolicy：丢掉队列里最老的任务，把新任务加进去。
+
+一句话记线程池执行流程（面试口述版）：  
+- 先用核心线程处理任务；  
+- 核心线程都忙不过来，任务进队列排队；  
+- 队列也满了，就再开非核心线程，一直开到 maximumPoolSize；  
+- 线程也满了、队列也满了，就触发拒绝策略（handler）。
+
+### 23、Object 类的常见方法有哪些？（面试口述版）
+
+- getClass()：获取对象的运行时类（Class），反射、类型判断时用。  
+- equals(Object obj)：默认比较“引用是否同一个”；重写后用来比“内容是否相等”。  
+- hashCode()：默认和对象地址相关；重写 equals 时一般要一起重写，满足哈希容器的约定。  
+- toString()：默认返回 类名@十六进制 hashCode；重写后便于日志、调试打印。  
+- clone()：浅拷贝，需实现 Cloneable；子类要重写并注意深拷贝问题，实际用得不多。  
+- wait() / notify() / notifyAll()：和 synchronized 配合，做线程间等待与唤醒。  
+- finalize()：GC 前可能调用，已不推荐使用，了解即可。
+
+### 24、ArrayList 与 LinkedList 区别？（面试口述版）
+
+- 底层结构：ArrayList 是动态数组，元素在内存中连续存放；LinkedList 是双向链表，节点之间通过指针前后相连。  
+- 随机访问：ArrayList 通过下标随机访问是 O(1)，适合按索引读写；LinkedList 按下标访问需要从头/尾走一圈，是 O(n)。  
+- 插入/删除：在中间位置频繁插入/删除时，ArrayList 需要搬移后面的元素，平均 O(n)；LinkedList 只要改前后指针，找到节点后是 O(1)。  
+- 空间与缓存：ArrayList 连续存储，指针开销小，对 CPU 缓存友好，遍历性能好；LinkedList 每个节点多两个指针，内存开销大，缓存友好性差。  
+- 使用场景总结：随机访问多、遍历多、插入删除不算频繁，用 ArrayList；极少数真的需要在中间频繁插删、且不怎么按下标访问时，才考虑 LinkedList（实际项目里用得相对少）。

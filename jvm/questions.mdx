@@ -1,0 +1,64 @@
+---
+title: JVM 常见面试题
+sidebarTitle: JVM 常见面试题
+description: OOM 排查、JVM 组成、运行时内存区、方法区、JDK7与8区别
+---
+
+## 二、JVM
+
+### 1、如何排查 OOM（面试口述版，记 3 步）
+
+可以这样答：**先看类型、再抓现场、最后定原因**。
+
+**第 1 步：先看 OOM 类型（是什么内存不够）**  
+- 常见几种：Java heap space、Metaspace、GC overhead limit exceeded、Direct buffer memory 等。  
+- 先搞清楚是堆不够，还是元空间/直接内存等不够，心里有个大方向。
+
+**第 2 步：抓现场（拿 dump）**  
+- 启动参数打开自动 dump：-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=...。  
+- 或事后用 jmap 导出堆：`jmap -dump:format=b,file=xxx.hprof &lt;pid&gt;`。
+
+**第 3 步：分析 dump + 判断原因**  
+- 用 MAT / VisualVM 看 Dominator Tree、Top Consumers、GC Roots，看看是哪些对象占了大头、被谁引用着。  
+- 典型两类结论：  
+  - 内存泄漏：对象本该释放但被长期引用（静态集合、无限制缓存、ThreadLocal 未清理等），要改代码。  
+  - 内存真的不够/峰值太高：对象确实需要，考虑优化数据结构、分批处理、限流/分页，或在评估后适当调大堆。  
+- 最后结合日志和监控（GC 日志、接口 QPS、响应时间、缓存命中率等）交叉验证，避免只盯 dump。
+
+### 2、JVM 由哪些部分组成？运行时内存区有哪些？
+
+JVM 主要包括：
+
+**1）类加载子系统（ClassLoader）** 把 .class 文件加载进内存，变成 JVM 能用的“类信息”。
+
+**2）运行时数据区（Runtime Data Area）** 程序运行时用到的内存区域。
+
+**3）执行引擎（Execution Engine）** 真正执行字节码：
+
+- 解释执行（逐条解释）
+- JIT 编译（热点代码编译成机器码更快）
+- GC（垃圾回收也属于 JVM 运行时的重要机制）
+
+**4）本地方法接口 JNI + 本地方法库** 让 Java 能调用 C/C++ 的代码（比如一些底层库）。
+
+**运行时数据区：“3 个线程私有 + 2 个线程共享”**
+
+- **线程私有：**
+  - 1）程序计数器（PC）：记录当前线程执行到哪一行字节码了。线程切换回来能接着跑。
+  - 2）虚拟机栈（Java Stack）：每次调用方法都会压一个栈帧，里面放局部变量和返回信息。常见错误：StackOverflowError（递归太深）。
+  - 3）本地方法栈（Native Stack）：给 JNI 这种调用 C/C++ 的本地方法用的栈，了解即可。
+
+- **线程共享：**
+  - 4）堆（Heap）：存对象的地方，new 出来的对象基本都在堆里。常见错误：OutOfMemoryError: Java heap space。
+  - 5）方法区（Method Area）：存“类相关的信息”：类元数据、常量池、静态变量等。JDK8 以后方法区的实现主要是元空间 Metaspace（用本地内存）。
+
+### 3、方法区是什么？
+
+方法区是线程共享的内存区域，用于存放类元数据（类结构、运行时常量池、字段/方法信息、静态变量等）。
+
+### 4、方法区在 JDK 1.7 和 1.8 的区别
+
+JDK7 以前“类的信息”放在 JVM 里的一个固定区域（永久代），JDK8 把这个固定区域删了，改成用操作系统的本地内存（元空间），不容易因为类太多把 JVM 撑爆。
+
+- 1.7：方法区主要落在永久代（PermGen），受 JVM 堆内存参数影响，容易 PermGen OOM。  
+- 1.8：永久代移除，改为元空间（Metaspace），使用本地内存，参数主要是 -XX:MaxMetaspaceSize。

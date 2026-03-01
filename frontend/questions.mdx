@@ -1,0 +1,28 @@
+---
+title: 前端常见面试题
+sidebarTitle: 前端常见面试题
+description: React 生命周期、虚拟 DOM、Vue3 生命周期
+---
+
+## 六、前端
+
+### 1、React 生命周期（以函数组件为主）
+
+- 挂载：首次渲染；`useEffect(() => {}, [])` 在挂载后执行。  
+- 更新：state/props 变化触发重新渲染；useEffect 依赖变化后执行。  
+- 卸载：组件移除；useEffect 返回的 cleanup 函数在卸载时执行。  
+（类组件：componentDidMount / componentDidUpdate / componentWillUnmount）
+
+### 2、什么是虚拟 DOM
+
+虚拟 DOM 是对真实 DOM 的一层 JS 对象抽象。React 通过对比新旧虚拟 DOM（diff），计算出最小变更，再批量更新真实 DOM，从而减少直接操作 DOM 的成本，并带来更可预测的 UI 更新模型。
+
+虽然我暂时没有深入用过 React，但我有 Vue 的，两者基础核心都是组件化和数据驱动，不同的是 React 使用 JSX，即 HTML 和 JS 结合起来，同时在状态管理上常用 Redux。这周周末也在看官方文档和编写简单的代码，我觉得以我的学习能力，能很快的学习并上手实际开发。
+
+### 3、Vue3 生命周期（面试好背版）
+
+- onMounted：组件第一次渲染到页面后执行，用来做初始化（请求数据、绑定事件、开定时器、初始化图表等）。  
+- onUpdated：组件更新并完成 DOM 更新后执行；如果要拿到更新后的 DOM，配合 nextTick。  
+- onUnmounted：组件销毁时做清理（移除事件监听、清定时器、关 WebSocket），避免内存泄漏和重复执行。  
+
+一句话总结：挂载做初始化，更新后拿 DOM 用 nextTick，卸载做清理。

@@ -1,0 +1,53 @@
+---
+title: DevOps 常见面试题
+sidebarTitle: DevOps 常见面试题
+description: Linux、Docker、Git 常用命令
+---
+
+## 七、DevOps
+
+### 1、常见 Linux 命令（面试常用）
+
+- 目录/文件：pwd，ls -al，cd，mkdir -p，touch，cp，mv，rm -rf  
+- 查看文件：cat，less，head，tail -f  
+- 查找/过滤：grep -n "xxx" file，find /path -name "*.log"，awk，sed  
+- 权限：chmod，chown  
+- 进程：ps -ef | grep xxx，top，kill -9 pid  
+- 网络：ping，curl，wget，netstat -tunlp，ss -lntp  
+- 磁盘/内存：df -h，du -sh *，free -h  
+- 压缩：tar -czvf a.tar.gz dir，tar -xzvf a.tar.gz  
+- 日志排组合：tail -f app.log | grep "ERROR"
+
+### 2、常见 Docker 命令（面试常用）
+
+- 镜像：docker images，docker pull xxx，docker rmi imageId  
+- 容器：docker ps -a，docker run -d -p 8080:80 --name app image  
+- 进入容器：docker exec -it app bash  
+- 日志：docker logs -f --tail 200 app  
+- 启停/删除：docker start/stop/restart app，docker rm -f app  
+- 构建：docker build -t myapp:1.0 .  
+- 推送：docker push myapp:1.0（需先 docker login，并且镜像名带仓库前缀，如 my-registry.com/ns/myapp:1.0）  
+- 资源查看：docker stats  
+- 清理：docker system prune  
+- Compose：docker compose up -d，docker compose ps，docker compose logs -f，docker compose down  
+
+### 3、Git 常用命令（面试常用）
+
+- 初始化：git init  
+- 克隆：git clone &lt;url&gt;  
+- 查看状态：git status  
+- 查看差异：git diff  
+- 添加暂存区：git add . / git add &lt;file&gt;  
+- 提交：git commit -m "msg"  
+- 查看提交记录：git log --oneline  
+- 查看分支：git branch  
+- 新建并切换分支：git checkout -b &lt;branch&gt;（或 git switch -c &lt;branch&gt;）  
+- 切换分支：git checkout &lt;branch&gt;（或 git switch &lt;branch&gt;）  
+- 合并分支：git merge &lt;branch&gt;  
+- 拉取：git pull  
+- 推送：git push  
+- 远程仓库：git remote -v  
+- 暂存当前修改：git stash / git stash pop  
+- 回退（未提交）：git restore &lt;file&gt;（或 git checkout -- &lt;file&gt;）  
+- 回退（已提交）：git reset --soft/--mixed/--hard &lt;commit&gt;  
+- 解决冲突：先手动改冲突文件，再 git add，再 git commit  
