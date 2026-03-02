@@ -1,7 +1,7 @@
 ---
 title: DevOps 常见面试题
 sidebarTitle: DevOps 常见面试题
-description: Linux、Docker、Git 常用命令
+description: Linux、Docker、Git 常用命令，Nginx 负载均衡
 ---
 
 ## 七、DevOps
@@ -51,3 +51,45 @@ description: Linux、Docker、Git 常用命令
 - 回退（未提交）：git restore &lt;file&gt;（或 git checkout -- &lt;file&gt;）  
 - 回退（已提交）：git reset --soft/--mixed/--hard &lt;commit&gt;  
 - 解决冲突：先手动改冲突文件，再 git add，再 git commit  
+
+### 4、Nginx 反向代理和负载均衡怎么配置？（面试口述版）
+
+**反向代理配置：**  
+Nginx 收到请求后，不直接返回本地资源，而是把请求转发到后端服务器，并把后端响应再返回给客户端，对客户端来说只和 Nginx 打交道，这就是反向代理。核心用 `proxy_pass` 指定后端地址：
+
+```nginx
+server {
+    listen 80;
+    server_name www.example.com;
+    location / {
+        proxy_pass http://127.0.0.1:8080;   # 转发到本机 8080
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+```
+
+常用搭配：`proxy_set_header` 把真实 Host、客户端 IP 等传给后端，便于后端做日志和鉴权。
+
+**负载均衡配置：**  
+在反向代理基础上，用 `upstream` 定义**多台**后端，Nginx 按策略选一台转发，就是负载均衡。`proxy_pass` 指向 upstream 名即可：
+
+```nginx
+upstream backend {
+    # 调度策略（可选）：默认轮询；或 weight=2、ip_hash、least_conn 等
+    server 192.168.1.10:8080 weight=3;
+    server 192.168.1.11:8080 weight=1;
+    server 192.168.1.12:8080 backup;   # 其他都不可用时才用
+}
+server {
+    listen 80;
+    location / {
+        proxy_pass http://backend;   # 指向 upstream，实现负载均衡
+    }
+}
+```
+
+**常见调度方式：** 轮询（默认）、`weight` 加权轮询、`ip_hash` 会话保持、`least_conn` 最少连接。
+
+**面试可一句话概括：** 反向代理用 `proxy_pass` 指到一台后端；负载均衡先用 `upstream` 配多台 server 和调度策略，再 `proxy_pass http://upstream名` 即可。

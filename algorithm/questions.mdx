@@ -1,0 +1,117 @@
+---
+title: 算法题
+sidebarTitle: 算法题
+description: 数组下标匹配、矩阵最短路径和
+---
+
+## 算法题
+
+### 1、A 中在 B 里出现的元素，返回在 A 中的下标（同一题两种问法）
+
+**题目（两种常见问法，是同一道题）：**
+
+- 已知数组 A、B，若 A 中元素在 B 中存在，输出该元素在 **A** 中的下标；B 无重复。
+- 给定 `int[] a`、`int[] b`（b 不重复），若 a 中某元素与 b 中重复，返回其在 a 中的索引。
+
+**示例：**
+
+- Input: A = [5, 3, 1, 5, 4], B = [5, 3]  
+  Output: [0, 1, 3]（A 中值为 5 的下标 0、3，值为 3 的下标 1）
+
+- Input: a = [1, 4, 5, 6, 7], b = [4, 5]  
+  Output: [1, 2]
+
+**解法一：暴力双层循环（O(n·m)）**
+
+遍历 A 的每个下标，对每个元素再遍历 B 看是否出现，若出现则把当前下标加入结果。
+
+```java
+public static List<Integer> findIndexesBrute(int[] a, int[] b) {
+    List<Integer> res = new ArrayList<>();
+    for (int i = 0; i < a.length; i++) {
+        for (int j = 0; j < b.length; j++) {
+            if (a[i] == b[j]) {
+                res.add(i);
+                break;
+            }
+        }
+    }
+    return res;
+}
+```
+
+**解法二：用 HashSet 优化（O(n + m)）**
+
+B 不重复，先把 B 全部放入 `Set`，再遍历 A 一次，若当前值在 set 里则记录下标。查 set 是 O(1)，整体 O(n + m)。
+
+```java
+public static List<Integer> findIndexes(int[] a, int[] b) {
+    Set<Integer> setB = new HashSet<>();
+    for (int x : b) setB.add(x);
+    List<Integer> res = new ArrayList<>();
+    for (int i = 0; i < a.length; i++) {
+        if (setB.contains(a[i])) res.add(i);
+    }
+    return res;
+}
+```
+
+**小结：** 面试时先说暴力，再提“B 无重复可先放进 HashSet，遍历 A 一次即可”，体现优化思路。
+
+---
+
+### 2、矩阵从上到下最短路径和（仅走相邻节点）
+
+**题目：**
+
+- 从第一行任意元素出发，只能往下走，且只能走向**正下方相邻**的节点（左下、正下、右下）。
+- 求一条从第一行到最后一行的路径，使路径上数字之和最小。
+- 例如：第一排的 2 只能走向第二排的 7、3；第二排的 7 可走向第三排的 6、2、9。
+
+**示例：**
+
+```
+| 5 | 8 | 1 | 2 |
+| 4 | 1 | 7 | 3 |
+| 3 | 6 | 2 | 9 |
+```
+
+- Input: matrix 如上  
+- Output: 4（路径例如 1 → 1 → 2，即第一行 1、第二行 1、第三行 2）
+
+**思路：DP**
+
+- “相邻”指下一行的列下标为 `col-1`、`col`、`col+1`（越界的不取）。
+- 设 `dp[row][col]` = 从第一行某点走到 `(row, col)` 的最小路径和，则：
+  - 第一行：`dp[0][col] = matrix[0][col]`。
+  - 后续行：`dp[row][col] = matrix[row][col] + min(下一行中 col-1、col、col+1 对应的 dp)`，注意边界。
+- 答案 = `min(dp[最后一行][*])`。
+
+也可以从最后一行往第一行递推（逆向 DP），最后取 `min(dp[0][*])`。
+
+**注意：** 递推时必须考虑**三个**方向（左、中、右），不能只取两个；且答案应是第一行所有起点中的最小值，而不是只取 `dp[0][0]`。
+
+**参考实现（从最后一行往第一行推，最后取 min(dp[0])）：**
+
+```java
+public static int findShortestPathSum(int[][] matrix) {
+    int rows = matrix.length;
+    int cols = matrix[0].length;
+    int[][] dp = new int[rows][cols];
+    for (int c = 0; c < cols; c++) dp[rows - 1][c] = matrix[rows - 1][c];
+
+    for (int r = rows - 2; r >= 0; r--) {
+        for (int c = 0; c < cols; c++) {
+            int next = dp[r + 1][c];
+            if (c - 1 >= 0) next = Math.min(next, dp[r + 1][c - 1]);
+            if (c + 1 < cols) next = Math.min(next, dp[r + 1][c + 1]);
+            dp[r][c] = matrix[r][c] + next;
+        }
+    }
+    int res = dp[0][0];
+    for (int c = 1; c < cols; c++) res = Math.min(res, dp[0][c]);
+    return res;
+}
+```
+
+**小结：** 相邻 = 左、正下、右三个方向；DP 递推时三者取 min，最后答案取第一行的最小值。
