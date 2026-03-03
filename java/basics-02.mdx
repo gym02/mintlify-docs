@@ -59,13 +59,33 @@ description: 接口与抽象类、深浅拷贝、反射、异常、volatile、Th
 
 ### 16、异常体系（面试口述版）
 
+**体系图（继承关系）**  
+Java 里所有“能抛的”都继承自 **Throwable**，下面分两支：**Error** 和 **Exception**。Exception 里又分“受检异常”和 **RuntimeException**（运行时异常，不受检）。图只画主干、一屏可览；常见子类列在下方。
+
+```mermaid
+flowchart TB
+    T[Throwable]
+    T --> E1[Error]
+    T --> Ex[Exception]
+    Ex --> RTE[RuntimeException]
+    Ex --> Checked[受检异常]
+    E1 --> E子[OOM / StackOverflow / VirtualMachineError]
+    RTE --> R子[NPE / IAE / IndexOutOfBounds / ArithmeticException]
+    Checked --> C子[IOException / SQLException / FileNotFoundException 等]
+```
+
+**常见子类速查**（与上图对应）：  
+- **Error**：OutOfMemoryError、StackOverflowError、VirtualMachineError 等。  
+- **RuntimeException**：NullPointerException、IllegalArgumentException、IndexOutOfBoundsException、ArithmeticException 等。  
+- **受检异常**：IOException、SQLException、InterruptedException、FileNotFoundException 等。
+
 **1）Error vs Exception**  
-- Error：JVM 层面的严重问题，通常程序无法/不应该处理（如 OOM、StackOverflowError）。  
-- Exception：程序运行中可预期的异常情况，通常需要处理或抛出。
+- **Error**：JVM 层面的严重问题，程序一般无法/不应该去 catch（如 OOM、StackOverflowError、VirtualMachineError）。  
+- **Exception**：程序运行中可预期、可处理的异常，需要捕获或抛出。
 
 **2）RuntimeException vs Checked Exception**  
-- RuntimeException（运行时异常）：不强制 try-catch/throws，通常是“代码问题/参数问题”（NPE、IndexOutOfBounds、IllegalArgument）。  
-- Checked Exception（受检异常）：编译器强制处理（try-catch 或 throws），通常是“外部环境问题”（IO、网络、数据库等）。
+- **RuntimeException**（及其子类）：运行时异常，**编译器不强制** try-catch/throws；多是代码/参数问题（NPE、IndexOutOfBounds、IllegalArgument、ArithmeticException 等）。  
+- **Checked Exception**（Exception 下除 RuntimeException 外的子类）：**编译器强制**处理（try-catch 或 throws）；多是外部环境问题（IOException、SQLException、InterruptedException 等）。
 
 **3）try-catch-finally 执行顺序？finally 一定会执行吗？**  
 - 正常流程：try →（有异常走 catch）→ finally。  
