@@ -17,7 +17,7 @@
           {"group": "Java 基础", "pages": ["java/basics-01", "java/basics-02"]},
           {"group": "JVM", "pages": ["jvm/questions"]},
           {"group": "Spring", "pages": ["spring/questions"]},
-          {"group": "数据库", "pages": ["database/mysql-01", "database/mysql-02"]},
+          {"group": "数据库", "pages": ["database/mysql-01", "database/mysql-02", "database/mysql-interview-basics"]},
           {"group": "Redis", "pages": ["redis/questions"]},
           {"group": "前端", "pages": ["frontend/questions"]},
           {"group": "DevOps", "pages": ["devops/questions"]},
