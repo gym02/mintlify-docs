@@ -23,7 +23,7 @@
           {"group": "DevOps", "pages": ["devops/questions"]},
           {"group": "面试项目", "pages": ["project/questions"]},
           {"group": "算法", "pages": ["algorithm/questions"]},
-          {"group": "场景题", "pages": ["scenario/questions"]}
+          {"group": "场景题", "pages": ["scenario/questions", "scenario/appen-interview"]}
         ]
       }
     ],
