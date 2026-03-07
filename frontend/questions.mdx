@@ -1,7 +1,7 @@
 ---
 title: 前端常见面试题
 sidebarTitle: 前端常见面试题
-description: React 生命周期、虚拟 DOM、Vue3 生命周期
+description: React 生命周期、虚拟 DOM、Vue3 生命周期、Promise、async/await
 ---
 
 ## 六、前端
@@ -26,3 +26,11 @@ description: React 生命周期、虚拟 DOM、Vue3 生命周期
 - onUnmounted：组件销毁时做清理（移除事件监听、清定时器、关 WebSocket），避免内存泄漏和重复执行。  
 
 一句话总结：挂载做初始化，更新后拿 DOM 用 nextTick，卸载做清理。
+
+### 4、async 和 await 的作用（面试口语版）
+
+**面试一句话**：async 标记“这是异步函数”，await 在函数里“等 Promise 出结果再执行下一行”，这样异步逻辑可以按顺序写，不阻塞页面，错误用 try/catch 抓。
+
+**为啥要写 await？** 代码虽然是按顺序写的，但不写 await 时，像 `fetch()` 这种异步操作会**一调用就立刻往下执行下一行**，不会等请求回来；写 await 才是“等这一行有结果了再执行下一行”，这样**拿到结果的顺序**才和代码顺序一致。
+
+**一句话**：Promise 是 JS 里表示“一个将来才会有的结果”的对象。比如发请求、读文件，结果要等一会儿才来，Promise 就是先占个位，等结果到了再通过 `.then()` 或 `await` 给你用。
