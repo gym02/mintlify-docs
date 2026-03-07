@@ -1,7 +1,7 @@
 ---
 title: Skills、Prompt、MCP、Function Calling 区别
 sidebarTitle: AI
-description: Skills、Prompt、MCP、Function Calling、RAG 等 AI 概念
+description: Skills、Prompt、MCP、Function Calling、RAG、LangGraph 等 AI 概念
 ---
 
 ## Skills、Prompt、MCP、Function Calling 有什么区别？
@@ -32,18 +32,38 @@ description: Skills、Prompt、MCP、Function Calling、RAG 等 AI 概念
 - **特点**：模型负责“决定调什么、传什么参数”；执行和权限在你这边，适合查数据库、发请求、改配置等需要**安全边界**的场景。
 - **与 MCP 的关系**：MCP 是**协议 + 生态**（如何定义工具、如何连接多种服务器）；Function Calling 是**模型侧的能力**（如何表达“我要调用哪个函数、传什么参”）。很多 MCP 工具在实现上会用到“模型发起调用 → 宿主执行”的机制，和 Function Calling 是同一类思路。
 
-## RAG（检索增强生成）
-
-RAG = 先检索知识库得到相关片段，再把这些片段和用户问题一起给大模型生成回答，减少幻觉、可更新知识。**概念说明与用 ChatGPT API 从零搭建、组装使用的具体步骤见 [RAG 是什么与如何搭建](/concepts/rag)。**
-
-3）一句话对照
-
+一句话对照
 | 概念 | 一句话 |
 |------|--------|
 | **Prompt** | 你临时输入的自然语言指令，告诉模型“这次要做什么”。 |
 | **Skills** | 事先写好的任务流程与规范文档，模型在做某类任务时按它来执行。 |
 | **MCP** | 让模型能连接并调用外部工具/数据源的协议，扩展“能做的事”。 |
 | **Function Calling** | 模型输出“调用哪个函数、传什么参”，由宿主环境真正执行并回传结果。 |
-| **RAG** | 先检索知识库得到相关片段，再把这些片段和用户问题一起给大模型生成回答，减少幻觉、可更新知识。 |
 
-面试或讨论时可以说：**Prompt 是输入、Skills 是规范与流程、MCP 是外部能力协议、Function Calling 是“模型决定调什么、环境来执行”的机制、RAG 是“检索 + 增强 Prompt + 生成”的知识库问答方案**；配合起来构成“指令 + 规范 + 工具 + 执行 + 知识增强”的完整链路。
+## RAG（检索增强生成）
+
+RAG = 先检索知识库得到相关片段，再把这些片段和用户问题一起给大模型生成回答，减少幻觉、可更新知识。**概念说明与用 ChatGPT API 从零搭建、组装使用的具体步骤见 [RAG 是什么与如何搭建](/concepts/rag)。**
+
+## LangGraph（有状态编排 / Agent 工作流）
+
+- **是什么**：用于构建**有状态、可编排**的 Agent 工作流的框架。把流程建模成**图**：节点（Node）= 可执行单元（调 LLM、工具、数据处理），边（Edge）= 节点间的流向（顺序、分支、循环），状态（State）= 节点间共享的上下文。相比线性链式调用，支持分支、循环、重入，更适合复杂多步与 Multi-Agent。
+- **和 LangChain 的区别与联系**：  
+  **联系**：LangGraph 出自 LangChain 生态，底层可以复用 LangChain 的模型封装、Tool、Chain 等组件；两者常一起用（用 LangChain 接模型和工具，用 LangGraph 做流程编排）。  
+  **区别**：LangChain 侧重**链式调用**（一步接一步的 Pipeline）和**组件接口**（LLM、Prompt、Retriever 等）；LangGraph 侧重**图编排**和**显式控制流**（分支、循环、多节点、有状态），把“下一步走哪”写成图而不是固定链。不强制依赖 LangChain，可单独用 LangGraph 做图，底层换别的模型/工具库也行。
+
+**面试常问：**
+
+1）必须用 LangChain 才能用 LangGraph 吗？  
+**答：** 不需要，LangGraph 可独立使用。
+
+2）LangGraph 和其他 Agent 框架有啥区别？  
+**答：** 用图显式表达控制流，支持分支、循环、重入，不限制成单一黑盒链路，适合定制复杂任务和 Multi-Agent。
+
+3）LangGraph 会影响应用性能吗？  
+**答：** 不会额外增加运行时开销，且支持流式。
+
+4）LangGraph 开源吗？  
+**答：** 是，MIT 许可，可免费使用。
+
+5）Multi-Agent 怎么设计？  
+**答：** 每个 Agent 做成图里的节点，职责单一、工具集合固定；用一个 **Supervisor** 节点做路由，根据当前状态决定下一步走哪个 Agent；状态在节点间共享，可设最大步数/超时与失败重试，保证稳定和成本可控。
