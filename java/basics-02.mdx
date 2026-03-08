@@ -83,6 +83,11 @@ flowchart TB
 - **Error**：JVM 层面的严重问题，程序一般无法/不应该去 catch（如 OOM、StackOverflowError、VirtualMachineError）。  
 - **Exception**：程序运行中可预期、可处理的异常，需要捕获或抛出。
 
+**Error 了程序还能运行吗？会崩溃吗？**  
+- **不 catch 时**：Error 会一路向上抛，**当前线程会终止**；若是主线程或唯一在工作的是这个线程，程序就相当于“崩溃”了。像 OOM、StackOverflowError 还可能让整个 JVM 退出。  
+- **如果 catch 了 Error（或 Throwable）**：理论上代码可以继续执行，但 JVM 可能已经处于不可信状态（如堆坏了、栈坏了），所以**一般不推荐** catch Error；只在少数场景（如最外层兜底打日志、做优雅退出）才考虑 catch。  
+**面试一句话：** Error 不 catch 会导致线程挂掉甚至 JVM 退出；catch 了理论上还能跑，但通常不建议，因为可能已经不可信。
+
 **2）RuntimeException vs Checked Exception**  
 - **RuntimeException**（及其子类）：运行时异常，**编译器不强制** try-catch/throws；多是代码/参数问题（NPE、IndexOutOfBounds、IllegalArgument、ArithmeticException 等）。  
 - **Checked Exception**（Exception 下除 RuntimeException 外的子类）：**编译器强制**处理（try-catch 或 throws）；多是外部环境问题（IOException、SQLException、InterruptedException 等）。
