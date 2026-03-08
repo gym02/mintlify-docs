@@ -1,7 +1,7 @@
 ---
 title: Spring 常见面试题
 sidebarTitle: Spring 常见面试题
-description: IOC、MVC、AOP、事务、Spring Cloud Alibaba、循环依赖、MyBatis
+description: IOC、MVC、AOP、事务、Spring Boot 自动装配、Spring Cloud Alibaba、循环依赖、MyBatis
 ---
 
 ## 三、Spring
@@ -100,3 +100,18 @@ Spring 事务传播行为（常问 3 个就够用）：
 - MyBatis：自己写 SQL，灵活但 CRUD 要多写代码。  
 - MyBatis-Plus：帮你生成/封装常见 CRUD，少写 SQL，开发更快。  
 - 口诀：**MyBatis 写得多更灵活，MyBatis-Plus 写得少更高效，底层都是 MyBatis。**
+
+### 8、Spring Boot 自动装配原理（面试口述版）
+
+**是什么：** Spring Boot 根据 classpath 里的依赖和约定，自动把一批默认配置（如 Web 服务器、数据源、Redis 等）注册成 Bean，不用你手写大量 XML 或 Java 配置，这就是自动装配。
+
+**核心入口：** 主类上的 `@SpringBootApplication` 是一个组合注解，里面包含 `@EnableAutoConfiguration`，它负责开启自动配置。启动时会去读“自动配置清单”，按条件决定哪些配置类生效，再把它们里的 Bean 注册进容器。
+
+**怎么找到自动配置类：**  
+- 传统方式：在依赖的 jar 里找 `META-INF/spring.factories`，其中 `EnableAutoConfiguration` 下列出一串 `XxxAutoConfiguration` 全类名。  
+- Spring Boot 2.7+ / 3.x：还会读 `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`，每行一个自动配置类全类名。  
+- 这些配置类通常带 `@Configuration`，里面用 `@Bean` 定义默认组件，并用 `@ConditionalOnXxx`（如 `@ConditionalOnClass`、`@ConditionalOnProperty`）控制“只有 classpath 里有某类、或配置了某属性时才生效”。
+
+**流程一句话：** 启动时通过 `@EnableAutoConfiguration` 读取 spring.factories / AutoConfiguration.imports，加载一堆 XxxAutoConfiguration；每个配置类根据条件注解判断是否生效，生效则把默认 Bean 注册进容器，从而做到“加依赖就可用”。
+
+**面试一句话：** 自动装配靠 `@EnableAutoConfiguration` + spring.factories（或 imports）里的一串 XxxAutoConfiguration，用条件注解按 classpath 和配置决定是否注册默认 Bean，加个 starter 就能用。
