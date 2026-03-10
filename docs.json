@@ -14,7 +14,7 @@
         "tab": "面试八股文",
         "groups": [
           {"group": "入门", "pages": ["index"]},
-          {"group": "AI", "pages": ["ai/ai-tools", "ai/rag", "ai/ai-interview"]},
+          {"group": "AI", "pages": ["ai/ai-tools", "ai/rag", "ai/openclaw", "ai/ai-interview"]},
           {"group": "Java 基础", "pages": ["java/basics-01", "java/basics-02"]},
           {"group": "JVM", "pages": ["jvm/questions"]},
           {"group": "Spring", "pages": ["spring/questions"]},
