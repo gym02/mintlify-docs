@@ -69,13 +69,14 @@ Spring 事务传播行为（常问 3 个就够用）：
 #### @Transactional 失效的常见场景
 
 - **方法不是 public**：Spring 基于代理的 AOP 只对 `public` 方法生效，`private` / `protected` / 包可见方法加注解也不会走事务。
+- **final / static 方法**：代理无法增强 `final`、`static` 方法，事务不生效。
 - **同类内部调用（自调用）**：在同一个类里用 `this.methodB()` 调用带 `@Transactional` 的 `methodB` 时，走的是当前对象而不是代理，事务切面不会生效。解决：把需要事务的方法拆到另一个 Bean 里通过注入调用，或通过 `AopContext.currentProxy()` 获取代理再调（需开启 `exposeProxy=true`）。
 - **不是 Spring 管理的 Bean**：自己 `new` 出来的对象上的 `@Transactional` 无效，必须由容器托管（如 `@Service`、`@Component`）并注入使用。
 - **在构造方法 / @PostConstruct 里调用**：Bean 代理尚未完全就绪，调用不会经过代理，事务不生效。
 - **异常被吃掉或不在回滚范围**：默认只对 `RuntimeException`、`Error` 回滚；若在方法里 catch 后不再抛出，事务不会回滚。受检异常需要显式配置，例如 `@Transactional(rollbackFor = Exception.class)`。
-- **@Async、多线程**：在异步方法或新线程里执行的逻辑不在当前事务上下文中；若希望有事务，需在异步方法所在 Bean 上单独加 `@Transactional`。
-- **final / static 方法**：代理无法增强 `final`、`static` 方法，事务不生效。
-- **传播行为设置不当**：例如外层无事务、内层 `REQUIRED` 各自提交，或使用 `REQUIRES_NEW` 导致内外事务隔离，回滚行为与预期不符，需根据调用链理清传播行为。
+- **@Async、多线程**：在异步方法或新线程里执行的逻辑不在当前事务上下文中；若希望有事务，需在异步方法所在 Bean 上单独加 `@Transactional`。（注意这会变成**另一个事务**）。
+- **传播行为设置不当**：`REQUIRED` 一般是“加入外层”；`REQUIRES_NEW` 是“我自己开一个新的”，所以外层回滚不一定影响内层。面试记一句：**想一起回滚就别乱用 REQUIRES_NEW**，先把调用链的传播行为理清楚。
+
 
 ### 5、Spring Cloud Alibaba 常用组件和功能（面试口语版）
 
