@@ -13,22 +13,36 @@
       {
         "tab": "面试八股文",
         "groups": [
-          {"group": "入门", "pages": ["index", "concepts/ai-tools", "concepts/rag"]},
-          {"group": "Java 基础", "pages": ["java/basics-01", "java/basics-02"]},
-          {"group": "JVM", "pages": ["jvm/questions"]},
-          {"group": "Spring", "pages": ["spring/questions"]},
-          {"group": "数据库", "pages": ["database/mysql-01", "database/mysql-02"]},
-          {"group": "Redis", "pages": ["redis/questions"]},
-          {"group": "RabbitMQ", "pages": ["rabbitmq/rabbitmq"]},
-          {"group": "前端", "pages": ["frontend/questions"]},
-          {"group": "DevOps", "pages": ["devops/questions"]},
-          {"group": "面试项目", "pages": ["project/questions"]},
-          {"group": "算法", "pages": ["algorithm/questions"]},
-          {"group": "场景题", "pages": ["scenario/questions", "scenario/appen-interview"]}
+          { "group": "入门", "pages": ["index"] },
+          { "group": "AI相关", "pages": ["java/concepts/ai-tools", "java/concepts/rag"] },
+          { "group": "Java 基础", "pages": ["java/basics-01", "java/basics-02"] },
+          { "group": "JVM", "pages": ["java/jvm/questions"] },
+          { "group": "Spring", "pages": ["java/spring/questions"] },
+          { "group": "数据库", "pages": ["java/database/mysql-01", "java/database/mysql-02"] },
+          { "group": "Redis", "pages": ["java/redis/questions"] },
+          { "group": "RabbitMQ", "pages": ["java/rabbitmq/rabbitmq"] },
+          { "group": "前端", "pages": ["java/frontend/questions"] },
+          { "group": "DevOps", "pages": ["java/devops/questions"] },
+          { "group": "面试项目", "pages": ["java/project/questions"] },
+          { "group": "算法", "pages": ["java/algorithm/questions"] },
+          { "group": "场景题", "pages": ["java/scenario/questions", "java/scenario/appen-interview"] }
+        ]
+      },
+      {
+        "tab": "C++",
+        "groups": [
+          { "group": "C++ 基础", "pages": ["cpp/basics"] },
+          { "group": "C++ 进阶", "pages": ["cpp/advanced"] }
+        ]
+      },
+      {
+        "tab": "人工智能",
+        "groups": [
+          { "group": "AI 实战", "pages": ["ai/overview"] }
         ]
       }
     ],
-    "global": {"anchors": []}
+    "global": { "anchors": [] }
   },
   "logo": {"light": "/logo/light.svg", "dark": "/logo/dark.svg"},
   "footer": {}
