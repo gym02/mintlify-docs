@@ -38,7 +38,7 @@
       {
         "tab": "人工智能",
         "groups": [
-          { "group": "AI 实战", "pages": ["ai/overview"] }
+          { "group": "AI", "pages": ["ai/ai-tools", "ai/rag", "ai/openclaw", "ai/ai-interview"] }
         ]
       }
     ],
