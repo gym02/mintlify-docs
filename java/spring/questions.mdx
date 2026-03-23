@@ -1,7 +1,7 @@
 ---
 title: Spring 常见面试题
 sidebarTitle: Spring 常见面试题
-description: IOC、MVC、AOP、事务、Spring Boot 自动装配、Spring Cloud Alibaba、循环依赖、MyBatis
+description: IOC、MVC、全局异常、CORS 跨域、AOP、事务、Spring Boot 自动装配、Spring Cloud Alibaba、循环依赖、MyBatis
 ---
 
 ## 三、Spring
@@ -39,15 +39,25 @@ Spring 启动时会扫描配置/注解，解析成 BeanDefinition；然后通过
 
 4）拦截器 afterCompletion，最终响应返回。
 
-### 3、Spring AOP 是什么？底层原理是什么？（更好背版）
+### 3、什么是 AOP？Spring / Spring Boot 里怎么理解？（面试口述版）
 
-- 什么是 AOP：可以简单理解为“面向切面编程”，就是**给方法套一层外壳**，在不改原方法代码的前提下，把日志、事务、权限这些“横切关注点”统一抽出来，在方法执行的前后/异常时统一处理。  
-- 在 Spring 里，AOP 的本质是：Spring 不直接把原始 Bean 给你，而是给你一个“代理对象”，你调的其实是代理；代理在合适的时机再去调用目标方法，中间把各种增强逻辑织进去。
+**AOP 是什么？**
 
-- 底层原理：主要是“动态代理 + 方法拦截”  
-  - JDK 动态代理：基于接口，只能代理实现了接口的类；Spring 默认优先用这个（代理的是接口）。  
-  - CGLIB 代理：通过生成子类、重写方法来实现代理；适合没有接口的普通类（代理的是类本身）。  
-  - 方法调用链：调用代理方法 -> 进入一堆切面（前置/后置/环绕等）-> 最后再执行目标方法 -> 再执行收尾逻辑。
+- **AOP**（Aspect-Oriented Programming，**面向切面编程**）把**横切关注点**——日志、事务、权限、监控等在**很多类里都会重复出现**的逻辑——**从业务代码里抽出来**，做成独立的「切面」，在**不改原方法体**的前提下，在方法**执行前 / 后 / 抛异常时**统一织入。
+- 可以把它理解成：**给一批方法统一套一层外壳**，业务方法只关心业务，横切逻辑交给切面维护。
+
+**和 Spring / Spring Boot 的关系：**
+
+- **Spring Boot** 没有单独再造一套 AOP，而是**沿用 Spring Framework 的 Spring AOP**（默认基于**运行时动态代理**）。你在 Boot 项目里用的 **`@Transactional`、`@Async`、自己写的 `@Aspect` + `@Around` 等**，底层往往就是 **AOP + 代理** 在起作用。
+- **本质**：容器里你拿到、注入的常常是**代理对象**；调用方法时先进代理，代理里执行**通知（Advice）**链，再调到**真实目标方法**。
+
+**底层原理（面试常问）：**
+
+- **JDK 动态代理**：目标类**实现了接口**时，Spring 默认用 JDK 代理，代理的是**接口**。  
+- **CGLIB**：没有接口或指定使用类代理时，通过**生成子类**覆盖方法；代理的是**类**。  
+- **调用链**：`调用代理方法 → 切面（前置/环绕/后置/异常）→ 目标方法 → 返回`。
+
+**面试一句话：** **AOP** 用来把**日志、事务、权限**等横切逻辑从业务里**剥离**，**Spring / Spring Boot** 通过 **Spring AOP + 动态代理（JDK / CGLIB）** 在运行时织入；**`@Transactional` 等注解**就是典型应用场景。
 
 ### 4、事务是什么？传播行为和隔离级别（面试口语版）
 
@@ -116,3 +126,35 @@ Spring 事务传播行为（常问 3 个就够用）：
 **流程一句话：** 启动时通过 `@EnableAutoConfiguration` 读取 spring.factories / AutoConfiguration.imports，加载一堆 XxxAutoConfiguration；每个配置类根据条件注解判断是否生效，生效则把默认 Bean 注册进容器，从而做到“加依赖就可用”。
 
 **面试一句话：** 自动装配靠 `@EnableAutoConfiguration` + spring.factories（或 imports）里的一串 XxxAutoConfiguration，用条件注解按 classpath 和配置决定是否注册默认 Bean，加个 starter 就能用。
+
+### 9、Spring Boot 中如何处理全局异常？（面试口述版）
+
+**答案：** 用 **`@RestControllerAdvice`**（或 **`@ControllerAdvice`**）配合 **`@ExceptionHandler`**。
+
+- **`@RestControllerAdvice`**：标在类上，表示**专门处理 Controller 层抛出的异常**；该类里的方法可以被 Spring 当成**全局异常处理器**。写 API 时常用 **`@RestControllerAdvice`**，等于 **`@ControllerAdvice` + `@ResponseBody`**，直接返回 JSON 等响应体。  
+- **`@ExceptionHandler`**：标在方法上，参数写**要捕获的异常类型**（如 `Exception.class`、`IllegalArgumentException.class`），方法体里**统一封装错误码、错误信息**，返回给前端，避免每个 Controller 里写一堆 try/catch。
+
+**流程一句话：** Controller 里抛异常 → Spring 找到带 `@ControllerAdvice` 的类里、能匹配异常类型的 **`@ExceptionHandler` 方法** → 执行该方法返回统一响应。
+
+**面试一句话：** 全局异常用 **`@ControllerAdvice` + `@ExceptionHandler`**；REST 接口常用 **`@RestControllerAdvice`** 直接返回 JSON。
+
+### 10、Spring Boot 如何启用跨域资源共享（CORS）？（面试口述版）
+
+浏览器**同源策略**下，前端页面在 `a.com`，接口在 `b.com` 时，要先通过 **CORS** 协商，服务端在响应里带上允许的源、方法、请求头等，浏览器才放行。
+
+**常用三种方式（任选其一或组合）：**
+
+1. **`@CrossOrigin` 注解**  
+   - 标在 **Controller 类**或**单个接口方法**上。  
+   - 可指定 `origins`（允许的前端域名）、`methods`、`allowedHeaders`、`maxAge` 等。  
+   - **适合**：范围明确、改动少。
+
+2. **实现 `WebMvcConfigurer`，重写 `addCorsMappings`**  
+   - 在 **`@Configuration`** 配置类里注册**全局**路径规则，例如 `registry.addMapping("/**").allowedOrigins("https://xxx.com").allowedMethods("GET","POST",...)`。  
+   - **适合**：整个应用统一跨域策略。
+
+3. **`CorsFilter` / `CorsConfigurationSource` Bean**  
+   - 更底层，和 Spring Security 一起用时也常用 **Security 的 `cors()`** 接同一套 `CorsConfigurationSource`。  
+   - **适合**：要和安全过滤器链、网关规则精细配合时。
+
+**面试一句话：** Spring Boot 里开 CORS 常用 **`@CrossOrigin`**，或 **`WebMvcConfigurer#addCorsMappings`** 配全局规则；复杂场景用 **`CorsConfigurationSource` / `CorsFilter`**（含与 Spring Security 集成）。

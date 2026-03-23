@@ -14,10 +14,11 @@
         "tab": "面试八股文",
         "groups": [
           { "group": "入门", "pages": ["index"] },
-          { "group": "AI相关", "pages": ["java/concepts/ai-tools", "java/concepts/rag"] },
+          { "group": "AI相关", "pages": ["java/concepts/ai-tools", "java/concepts/rag","java/concepts/openclaw", "java/concepts/ai-interview"] },
           { "group": "Java 基础", "pages": ["java/basics-01", "java/basics-02"] },
           { "group": "JVM", "pages": ["java/jvm/questions"] },
           { "group": "Spring", "pages": ["java/spring/questions"] },
+          { "group": "测试", "pages": ["java/testing/questions"] },
           { "group": "数据库", "pages": ["java/database/mysql-01", "java/database/mysql-02"] },
           { "group": "Redis", "pages": ["java/redis/questions"] },
           { "group": "RabbitMQ", "pages": ["java/rabbitmq/rabbitmq"] },
@@ -25,20 +26,20 @@
           { "group": "DevOps", "pages": ["java/devops/questions"] },
           { "group": "面试项目", "pages": ["java/project/questions"] },
           { "group": "算法", "pages": ["java/algorithm/questions"] },
-          { "group": "场景题", "pages": ["java/scenario/questions", "java/scenario/appen-interview"] }
+          { "group": "场景题", "pages": ["java/scenario/questions", "java/scenario/appen-interview"] },
+          { "group": "人事", "pages": ["hr/questions"] }
         ]
       },
       {
         "tab": "C++",
         "groups": [
-          { "group": "C++ 基础", "pages": ["cpp/basics"] },
-          { "group": "C++ 进阶", "pages": ["cpp/advanced"] }
+          { "group": "C++ 基础", "pages": ["cpp/zhenti"] }
         ]
       },
       {
         "tab": "人工智能",
         "groups": [
-          { "group": "AI", "pages": ["ai/ai-tools", "ai/rag", "ai/openclaw", "ai/ai-interview"] }
+          { "group": "AI", "pages": ["ai/deep-learning-basics", "ai/llm-questions", "ai/llm-2026-predictions"] }
         ]
       }
     ],

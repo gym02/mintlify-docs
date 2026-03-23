@@ -1,0 +1,70 @@
+---
+title: 测试常见面试题
+sidebarTitle: 测试（JUnit / Postman）
+description: 什么是单元测试、Java 如何做单元测试、Postman 与 JUnit 区别、本地跑 test 如何确认真的执行
+---
+
+## 测试
+
+### 1、什么是单元测试？Java 开发者如何进行单元测试？
+
+**什么是单元测试？**
+
+- **单元测试**是针对**最小可测单元**（通常是一个**类或一个方法**）写的自动化测试：给定输入，断言输出或行为是否符合预期。  
+- 目的：在**不改坏已有逻辑**的前提下快速回归、在重构时敢动手、把 bug 尽量拦在开发阶段。  
+- 和「整系统联调」不同：单元测试一般**不启动完整网络/数据库**（或用 Mock/内存库代替），跑得**快**、适合放进 **CI**。
+
+**Java 里常见怎么做？**
+
+1. **框架**：主流是 **JUnit 5**（`jupiter`），老项目可能还有 **JUnit 4**。断言用 **`Assertions.assertEquals`** 等。  
+2. **写在哪里**：测试代码放在 **`src/test/java`**，包名常与被测类**镜像**（如 `com.example.service` → `com.example.service` under test）。  
+3. **注解**：测试方法标 **`@Test`**；每个方法前后执行可用 **`@BeforeEach` / `@AfterEach`**；类级用 **`@BeforeAll` / `@AfterAll`**（注意 static）。  
+4. **依赖隔离**：单元测试里对 **DAO、外部 HTTP、消息队列** 常用 **Mock**（如 **Mockito**：`@Mock`、`@InjectMocks`、`when(...).thenReturn(...)`），只测**当前类逻辑**，避免连真实数据库。  
+5. **Spring 项目**：  
+   - 纯单元：直接 **`new` 被测类 + Mockito** 注入假依赖。  
+   - 需要 Spring 容器：可用 **`@SpringBootTest`**（偏重、偏集成）或 **`@WebMvcTest` / `@DataJpaTest`** 等**切片测试**，只拉起相关 Bean。  
+6. **怎么跑**：IDE 里右键运行测试类/方法；命令行 **`mvn test`** 或 **`gradle test`**，由 **Surefire**（Maven）等插件执行并生成报告。
+
+**面试一句话：** 单元测试是**对类/方法**的自动化验证；Java 里用 **JUnit +（可选）Mockito**，代码放 **`src/test/java`**，命令 **`mvn test` / `gradle test`**，Spring 可配合 **`@SpringBootTest` 或切片注解**。
+
+---
+
+### 2、Postman 测试和 JUnit 单元测试有什么区别？
+
+| 对比项 | **Postman** | **JUnit** |
+|--------|-------------|-----------|
+| **测什么** | 主要是 **HTTP 接口**（URL、Header、Body、状态码、JSON 结构） | **Java 代码**（方法返回值、异常、分支逻辑） |
+| **运行环境** | 发真实/模拟 **HTTP 请求**到**已启动的服务**（本地或环境） | 在 **JVM 里**跑测试进程，**不经过网卡**也能测（纯单元 + Mock） |
+| **谁写、谁维护** | 手工点或 **Collection + 脚本**（Tests 里写断言），偏**接口契约、联调** | **开发者**在 IDE 里写 **`.java`**，和代码一起 **Code Review、进 Git** |
+| **速度 / CI** | 往往要**先起服务**，偏慢；适合冒烟、回归接口 | **毫秒级**单测多，适合 **CI 每次提交跑** |
+| **典型用途** | 前后端联调、接口文档即请求、探索性调试 | **TDD/回归**、重构保护、复杂业务分支 |
+
+**一句话：** **Postman** 站在**客户端/接口**侧验证「服务对不对」；**JUnit** 站在**代码**侧验证「类/方法对不对」。两者**互补**：JUnit 保**内部逻辑**，Postman 保**对外契约与链路**。
+
+---
+
+### 3、本地用 test 跑测试，怎么知道「真的跑到了」？
+
+可以从 **「过程可见」** 和 **「结果可证」** 两方面确认。
+
+**1）看执行过程**
+
+- **IDE（IDEA / Eclipse）**：运行后 **Run 窗口**里会列出**每个测试方法**，绿色勾表示通过，红色表示失败；点开能看到**哪一个 `@Test` 被执行**。  
+- **Maven**：`mvn test` 日志里会有 **Surefire** 输出 **`Running xxxTest`**、**`Tests run: N, Failures: 0, Errors: 0`**。  
+- **Gradle**：`gradle test` 会打印 **BUILD SUCCESSFUL** 及每个测试任务结果。
+
+**2）看报告与产物**
+
+- **Maven**：`target/surefire-reports/` 下有 **XML/TXT**，记录每个类、每个用例是否执行、耗时、失败栈。  
+- **Gradle**：`build/reports/tests/test/index.html` 有 **HTML 报告**，可浏览器打开看列表。
+
+**3）故意验证（不放心时）**
+
+- 在某个测试里临时写一个**必失败的断言**（如 `assertEquals(1, 2)`），再跑 **`mvn test`**：应 **构建失败**，说明**确实执行到了该测试**。测完改回来。  
+- 或在测试里打 **日志**（`System.out` / Slf4j），跑完在控制台或日志文件里**搜关键字**，确认**该分支跑过**。
+
+**4）覆盖率（可选）**
+
+- 使用 **JaCoCo** 等插件生成 **覆盖率报告**：若某行代码从未被覆盖，说明对应测试**没执行到那条路径**（注意：覆盖率高不等于测得好，但能辅助确认「有没有跑到」）。
+
+**面试一句话：** 看 **IDE 绿色勾 / Maven Surefire 的 Tests run**；查 **`surefire-reports` 或 Gradle HTML 报告**；不放心就**临时写失败断言**或**打日志**验证；需要再开 **JaCoCo** 看覆盖率。
