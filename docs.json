@@ -33,7 +33,7 @@
       {
         "tab": "C++",
         "groups": [
-          { "group": "C++ 基础", "pages": ["cpp/zhenti"] }
+          { "group": "C++ 基础", "pages": ["cpp/zhenti", "cpp/cpp-2026-predictions"] }
         ]
       },
       {
