@@ -18,7 +18,7 @@
           { "group": "Java 基础", "pages": ["java/basics-01", "java/basics-02"] },
           { "group": "JVM", "pages": ["java/jvm/questions"] },
           { "group": "Spring", "pages": ["java/spring/questions"] },
-          { "group": "测试", "pages": ["java/testing/questions"] },
+          { "group": "测试", "pages": ["java/testing/questions", "java/testing/reexam-regression-english", "java/testing/data-structure-high-frequency"] },
           { "group": "数据库", "pages": ["java/database/mysql-01", "java/database/mysql-02"] },
           { "group": "Redis", "pages": ["java/redis/questions"] },
           { "group": "RabbitMQ", "pages": ["java/rabbitmq/rabbitmq"] },
